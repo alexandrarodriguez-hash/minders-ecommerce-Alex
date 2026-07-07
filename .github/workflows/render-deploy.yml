@@ -1,0 +1,45 @@
+name: Render Deploy (Backend)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build and Test with Maven
+        run: mvn -B package --file pom.xml
+
+  deploy:
+    name: Deploy to Render
+    needs: build
+    # Solo desplegamos en la rama principal tras un push
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deployment
+        run: |
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK_URL no está configurado en los secrets de GitHub."
+            exit 1
+          fi
+          echo "Ejecutando Deploy Hook de Render..."
+          curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
