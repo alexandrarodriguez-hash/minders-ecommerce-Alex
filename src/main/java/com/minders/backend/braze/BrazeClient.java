@@ -38,7 +38,7 @@ public class BrazeClient {
      * el flujo de compra del usuario en el front.
      */
     public boolean track(BrazeTrackRequest request) {
-        if (apiKey == null || apiKey.isBlank() || apiKey.equals("CHANGE_ME")) {
+        if (!isConfigured()) {
             log.warn("BRAZE_API_KEY no configurada; se omite el envío a Braze. Payload: {}", request);
             return false;
         }
@@ -70,5 +70,55 @@ public class BrazeClient {
             log.error("Error llamando a Braze /users/track: {}", ex.getMessage(), ex);
             return false;
         }
+    }
+
+    /**
+     * Fusiona el perfil anónimo con el external_id real del usuario
+     * autenticado, usando el endpoint /users/identify de Braze.
+     * Esto unifica el historial previo (eventos del visitante anónimo)
+     * con el perfil permanente del usuario registrado.
+     */
+    public boolean identify(String anonymousId, String externalId) {
+        if (!isConfigured()) {
+            log.warn("BRAZE_API_KEY no configurada; se omite identify. anonymousId={} externalId={}",
+                    anonymousId, externalId);
+            return false;
+        }
+
+        String url = restEndpoint + "/users/identify";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+
+        var body = com.minders.backend.braze.dto.BrazeIdentifyRequest.of(anonymousId, externalId);
+        HttpEntity<com.minders.backend.braze.dto.BrazeIdentifyRequest> entity = new HttpEntity<>(body, headers);
+
+        try {
+            ResponseEntity<BrazeTrackResponse> response =
+                    restTemplate.postForEntity(url, entity, BrazeTrackResponse.class);
+
+            BrazeTrackResponse responseBody = response.getBody();
+            boolean hasErrors = responseBody != null
+                    && responseBody.errors() != null
+                    && !responseBody.errors().isEmpty();
+
+            if (!response.getStatusCode().is2xxSuccessful() || hasErrors) {
+                log.error("Braze /users/identify respondió con problemas. status={} body={}",
+                        response.getStatusCode(), responseBody);
+                return false;
+            }
+
+            log.info("Identify enviado a Braze: anonymousId={} -> externalId={}", anonymousId, externalId);
+            return true;
+
+        } catch (RestClientException ex) {
+            log.error("Error llamando a Braze /users/identify: {}", ex.getMessage(), ex);
+            return false;
+        }
+    }
+
+    private boolean isConfigured() {
+        return apiKey != null && !apiKey.isBlank() && !apiKey.equals("CHANGE_ME");
     }
 }
