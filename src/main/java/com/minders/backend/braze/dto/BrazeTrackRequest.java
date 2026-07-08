@@ -27,4 +27,8 @@ public record BrazeTrackRequest(
             BrazeEvent event, List<BrazePurchase> purchases, BrazeAttributes attributes) {
         return new BrazeTrackRequest(List.of(event), purchases, List.of(attributes));
     }
+
+    public static BrazeTrackRequest ofAttributes(BrazeAttributes attributes) {
+        return new BrazeTrackRequest(List.of(), List.of(), List.of(attributes));
+    }
 }

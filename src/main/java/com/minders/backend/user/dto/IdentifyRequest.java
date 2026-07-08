@@ -12,5 +12,7 @@ public record IdentifyRequest(
         String anonymousId,
 
         @NotBlank(message = "externalId es obligatorio")
-        String externalId
+        String externalId,
+
+        String email
 ) {}

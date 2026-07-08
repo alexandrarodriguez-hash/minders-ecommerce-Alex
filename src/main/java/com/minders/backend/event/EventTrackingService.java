@@ -119,7 +119,8 @@ public class EventTrackingService {
                 externalId,
                 userProfileStore.lifetimeValueOf(externalId),
                 customerType,
-                userProfileStore.firstPurchaseDateOf(externalId)
+                userProfileStore.firstPurchaseDateOf(externalId),
+                null
         );
 
         // items es opcional y NO es parte de la taxonomía de Amplitude;
