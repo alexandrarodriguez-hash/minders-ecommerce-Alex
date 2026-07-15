@@ -13,20 +13,24 @@ import java.util.List;
 public record BrazeIdentifyRequest(
         List<AliasToIdentify> aliases_to_identify
 ) {
+    public record UserAlias(
+            String alias_name,
+            String alias_label
+    ) {}
+
     /**
-     * @param alias_name   El anonymousId que usaba el front (ej. "anon-uuid")
-     * @param alias_label  Etiqueta del alias; por convenio usamos "anonymous_id"
      * @param external_id  El external_id real del usuario autenticado
+     * @param user_alias   El objeto alias que contiene el alias_name y alias_label
      */
     public record AliasToIdentify(
-            String alias_name,
-            String alias_label,
-            String external_id
+            String external_id,
+            UserAlias user_alias
     ) {}
 
     public static BrazeIdentifyRequest of(String anonymousId, String externalId) {
         return new BrazeIdentifyRequest(
-                List.of(new AliasToIdentify(anonymousId, "anonymous_id", externalId))
+                List.of(new AliasToIdentify(externalId, new UserAlias(anonymousId, "anonymous_id")))
         );
     }
 }
+
